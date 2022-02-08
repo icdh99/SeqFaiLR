@@ -1,4 +1,4 @@
-Algorithms used to analyse Nanopore long reads sequencing error profile.
+HOIAlgorithms used to analyse Nanopore long reads sequencing error profile.
 The algorithms have been designed for Nanopore data, but can be applied for other long read data (and short read data too, however the analysis may not be relevant).
 
  
