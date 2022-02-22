@@ -50,7 +50,7 @@ def get_groups(filename):
     file = open(filename, "r")
     for line in file:
         group_name, species_name, color = line.rstrip().split("\t")
-        species_name = species_name.split(".")[0]
+        species_name = get_short_name(species_name)
         dictionary_group[species_name] = group_name
         dictionary_color[group_name] = color
     file.close()
@@ -59,10 +59,11 @@ def get_groups(filename):
 
 def get_short_name(long_name):
     L_name = long_name.replace("_", " ").split(" ")
+    if len(L_name) == 1:
+        return long_name
     L_name[0] = L_name[0][0] + "."
     short_name = " ".join(L_name)
     return short_name
-
 
 
 def build_group_per_species(filename):
@@ -84,7 +85,7 @@ def build_group_per_species(filename):
         if gc not in dict_gc:
             dict_gc[gc] = []
         dict_gc[gc] += [species_name]
-        
+
     L_ordered_species = [get_short_name(species_name) for gc in sorted(dict_gc)
                                                       for species_name in dict_gc[gc]]
     file.close()
@@ -493,17 +494,18 @@ def compute_results():
     L_label = ["Mismatches", "Insertions", "Deletions"]
     nb_max_row = 3
     nb_max_column = (len(L_lengths) // nb_max_row) + 1
+
     for group_name in L_groups:
         i_row, i_column = 0, 0
         fig = plt.figure()
         for length in dict_error_length[group_name]:
 
             ax = plt.subplot2grid((nb_max_row, nb_max_column), (i_row, i_column))
-            wedges, _, _ = ax.pie(dict_error_length[group_name][length],
-                                  colors=L_color, autopct='%1.0f%%',
-                                  pctdistance=0.8,
-                                  textprops=dict(color="k", size=12),
-                                  radius=1.2)
+            ax.pie(dict_error_length[group_name][length],
+                   colors=L_color, autopct='%1.0f%%',
+                   pctdistance=0.8,
+                   textprops=dict(color="k", size=12),
+                   radius=1.2)
             title = "Length " + str(length)
             plt.xlabel(title)
             if i_column < nb_max_column - 1:
@@ -615,7 +617,7 @@ def compute_results():
     # Save raw results in .txt file
     RAW_OUTPUT_FILE = open(OUTPUT_RAW + "percentage_homopolymer_correctly_sequenced_by_length.txt", "w")
     for group_name in dict_prct_correct:
-        RAW_OUTPUT_FILE.write(f"{group_name} ({','.join([elt for elt in L_species])})\n")
+        RAW_OUTPUT_FILE.write(f"{group_name} ({','.join([elt for elt in L_species if dict_species_group[get_short_name(elt)]==group_name ])})\n")
         RAW_OUTPUT_FILE.write("\t".join(["Homopolymer length",
                                          "List of ratio of correctly sequenced homopolymer"]) + "\n")
         for homopolymer_length in dict_prct_correct[group_name]:
@@ -637,8 +639,8 @@ def compute_results():
         nb_bases = len(L_bases)
         offset_intra = 0.25 # margin between bases (same length)
         offset_inter = (nb_bases+2) * offset_intra  # margin between length
-        L_patches = []
         for i_grp, group_name in enumerate(dict_prct_correct_detail_bases):
+            L_patches = []
             if dict_prct_correct_detail_bases[group_name][L_bases[0]][MIN_HOMOPOLYMER_LENGTH] == []:
                 continue
             for i_base, base in enumerate(dict_prct_correct_detail_bases[group_name]):
@@ -706,11 +708,11 @@ def compute_results():
             plt.legend(title="Bases:")
             plt.savefig(OUTPUT_PLOT + f"percentage_homopolymer_correctly_sequenced_by_length_base_detail_{group_name}.png")
             plt.close()
-    
+
     # Save raw results in .txt file
     RAW_OUTPUT_FILE = open(OUTPUT_RAW + "percentage_homopolymer_correctly_sequenced_by_length_detail.txt", "w")
     for group_name in dict_prct_correct_detail_bases:
-        RAW_OUTPUT_FILE.write(f"{group_name} ({','.join([elt for elt in L_species])})\n")
+        RAW_OUTPUT_FILE.write(f"{group_name} ({','.join([elt for elt in L_species if dict_species_group[get_short_name(elt)]==group_name ])})\n")
         RAW_OUTPUT_FILE.write("\t".join(["Homopolymer length",
                                          "List of ratio of correctly sequenced homopolymer"]) + "\n")
         for base in sorted(dict_prct_correct_detail_bases[group_name]):
@@ -730,7 +732,7 @@ def compute_results():
 
     # 4/ --- Plot dictionary storing homopolymer length differences ---
     #     between genomic expected one, and the actual sequenced one
-    
+
     # Set positions
     offset = 0.3
     dict_positions = {grp:[] for grp in range(len(L_groups))}
@@ -744,7 +746,11 @@ def compute_results():
 
     fig, ax = plt.subplots()
     L_patches = []
-    for i_grp, group_name in enumerate(L_ordered_species):
+    if "L_ordered_species" in globals():
+        to_enumerate = L_ordered_species
+    else:
+        to_enumerate = L_groups
+    for i_grp, group_name in enumerate(to_enumerate):
         color = dict_species_group_color[group_name]
         if dict_diff_length_sequenced[group_name][MIN_HOMOPOLYMER_LENGTH] == {}:
             position += offset
@@ -768,23 +774,23 @@ def compute_results():
         L_patches += [patch]
     # Add expected distribution x = y
     L_x, L_y = [], []
-    posx = 0 
+    posx = 0
     for i in range(MIN_HOMOPOLYMER_LENGTH, MAX_HOMOPOLYMER_LENGTH + 1):
         for N in range(len(L_groups)):
             L_x += [posx]
-            posx += offset      
+            posx += offset
             L_y += [i]
         posx += offset
-            
 
-        
-        
-    
+
+
+
+
     plt.plot(L_x, L_y, "--", color="black")
     # Details of the plot
     plt.yscale("log")
     L_tick_pos = []
-    pos = 0 
+    pos = 0
     for i in range(MIN_HOMOPOLYMER_LENGTH, MAX_HOMOPOLYMER_LENGTH + 1):
         L_tick_pos += [pos + (len(L_groups)-1)/2*offset]
         pos += offset * (len(L_groups)+1)
@@ -846,6 +852,12 @@ if __name__ == "__main__":
 
     if NB_MAX_ALN == -1:
         NB_MAX_ALN = float("inf")
+        print(f"  Compute all alignments per species.")
+        print(f"  You can set a maximum number of alignments computed per species by modifying the 'homopolymer_nb_max_aln' argument in seqfailr file to speed up computations.")
+
+    else:
+        print(f"  Compute a maximum of {NB_MAX_ALN} alignments per species, in order to speed up computation.")
+        print(f"  Set 'homopolymer_nb_max_aln=-1' argument in seqfailr file to compute all alignments.")
 
     # --- Parameters ---
 
@@ -940,6 +952,9 @@ if __name__ == "__main__":
         L_species += [species_name]
         print("  ", aln_filename)
 
+        # Create BED file containing positions of homopolymers
+        bed = open(OUTPUT_RAW + f"{species_name}_homopolymers.bed", "w")
+
 
         # initialize dictionary that store ratio of correctly sequenced homopolymers
         for length in L_lengths:
@@ -963,12 +978,14 @@ if __name__ == "__main__":
             genome_aln = aln_file.readline().replace("\n", "")
             read_aln = aln_file.readline().replace("\n", "")
 
+            chromosome = header_aln.split(" ; ")[4]
+            pos_in_genome = int(header_aln.split(" ; ")[2].split("=")[-1])
+
             nb_aln_done += 1
             tmp_progressing = int(nb_aln_done / NB_TOT_ALN * 100)
             if tmp_progressing > progressing and tmp_progressing % 5 == 0:
                 progressing = tmp_progressing
                 display_progressing_bar(progressing, time.time())
-                compute_results()
 
             if nb_aln_done >= NB_MAX_ALN: # Limit number of alignments to speed up computation
                 compute_results()
@@ -1025,9 +1042,30 @@ if __name__ == "__main__":
                                      group_name, homopolymer_genome_length, base_homopolymer)
 
 
+
+                # 7/ Create a BED file with positions of homopolymers
+                if "reverse" in header_aln:
+                    strand = "-"
+                else:
+                    strand = "+"
+                nb_gap = genome_aln[:start_genome].count("-")
+                start_genome -= nb_gap
+                if isinstance(homopolymer_genome_length, str):
+                    homopolymer_genome_length = int(homopolymer_genome_length[:-1])
+                end_genome = start_genome + homopolymer_genome_length
+                bed.write(f"{chromosome}\t{pos_in_genome+start_genome-1}\t{pos_in_genome+end_genome-1}\t.\t.\t{strand}\n")
+
+
+
+
+
+        bed.close()
+
+
         aln_file.close()
         sys.stdout.write("\n")
 
 
     compute_results()
+
 

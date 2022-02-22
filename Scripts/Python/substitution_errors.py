@@ -58,10 +58,11 @@ def init_dict_substitutions():
 
 def get_short_name(long_name):
     L_name = long_name.replace("_", " ").split(" ")
+    if len(L_name) == 1:
+        return long_name
     L_name[0] = L_name[0][0] + "."
     short_name = " ".join(L_name)
     return short_name
-
 
 def get_substitution_errors(dictionary, dirname):
     """
@@ -240,8 +241,8 @@ def plot_substitution_errors(dictionary, dictionary_groups):
             color = list_colors_hex[i]
             plt.plot(dict_positions[group_name], dictionary[group_name], "o", ms=4, 
                      color=color, label=group_name,
-		     mec="black", mew=1)
-        plt.legend(title="Species groups:", ncol=2)
+             mec="black", mew=1)
+        plt.legend(title="Species:", ncol=2)
 
     plt.xticks(ticks=L_label_positions, labels=list_labels)
     plt.xlim(-1, position)

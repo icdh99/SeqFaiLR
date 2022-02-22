@@ -8,7 +8,7 @@
 # - - - Error rate depending on quality scores - - -
 err_qual_window_length=100
 err_qual_max_aln_nb=200
-err_qual_min_occ_read=10
+err_qual_min_occ_read=2 #10
 err_qual_min_occ_window=1000
 
 # - - - Quality scores along raw reads - - -
@@ -17,7 +17,7 @@ qual_read_end_length=100
 # - - - Relative coverage depending on GC content of reads - - -
 cov_gc_window_size=100
 cov_gc_min_bases=100
-cov_gc_max_bases=100000
+cov_gc_max_bases=10000
 
 # - - - Error rate depending on GC content of reads - - -
 err_gc_nb_max_aln=500
@@ -26,7 +26,7 @@ err_gc_min_occ_to_plot=100
 # - - - Homopolymers - - -
 homopolymer_min_length=2
 homopolymer_max_length=12
-homopolymer_nb_max_aln=200
+homopolymer_nb_max_aln=-1
 
 # - - - Heteropolymers - - -
 heteropolymer_min_length=4
@@ -44,9 +44,9 @@ trinucleotides_nb_max_aln=100000
 # Parse command-line options
 
 function show_usage (){
-    echo "Usage $0 [options]"
+    echo "Usage $0 <Mode> [Grouping_mode]"
     echo ""
-    echo "Options:"
+    echo "Modes:"
     echo "-h|--help, display this help"
     echo "-i|--init, initialize: download needed extra algorithms, get data information for future analyses"
     echo "-m|--map, align reads against their reference genome"
@@ -57,17 +57,21 @@ function show_usage (){
     echo "-q|--quality, computes quality scores along reads and errors rates depending on quality score"
     echo "-g|--gc, computes coverage and error rates of reads depending on their GC content"
     echo "-a|--all, run all these scripts"
+    echo ""
+    echo "Grouping modes (optionnal). Will only affect --init and --all Modes"
+    echo "--no_group, do not merge species and output distinct results for each species [default]"
+    echo "--group_all, merge all species in one single group"
+    echo "--group, to define custom groups"
 
 return 0
 }
-
 
 if [[ $# -eq 0 ]];then
    show_usage
    exit 1
 fi
-if [[ $# -gt 1 ]];then
-   echo "WARNING: only one argument expected, so only the first one will be processed"
+if [[ $# -gt 2 ]];then
+   echo "WARNING: only one or two argument(s) expected, so only the two first ones will be processed"
    echo "If you want to run run all analysis, please use '$0 --all' or '$0 -a'"
    echo ""
 fi
@@ -104,9 +108,34 @@ case "$1" in
      -a | --all )
        mode=all
        ;;
+     "")
+       show_usage
+       ;;
+     *)
+       echo "Incorrect input provided"
+       show_usage
+       exit 1
+       ;;
+esac
+
+case $2 in
+     --group_all )
+       group_mode=all
+       ;;
+     --no_group )
+       group_mode=no
+       ;;
+     --group )
+       group_mode=custom
+       ;;
+     "" )
+       group_mode=no
+       ;;
      *)
       echo "Incorrect input provided"
+      echo "Secondary argument must be either '--group_all', '--no_group' or '--group'."
       show_usage
+      exit 1
       ;;
 esac
 
@@ -135,7 +164,7 @@ fi
 
 case $mode in
    init )
-     ./Scripts/initialize.sh
+     ./Scripts/initialize.sh $group_mode
      ;;
    mapping )
      ./Scripts/map.sh
@@ -169,7 +198,7 @@ case $mode in
 
      ;;
    all )
-     ./Scripts/initialize.sh
+     ./Scripts/initialize.sh $group_mode
      ./Scripts/map.sh
      ./Scripts/alignment_explicit.sh
      ./Scripts/substitution_errors.sh
@@ -188,3 +217,4 @@ case $mode in
      exit 1
      ;;
 esac
+

@@ -111,7 +111,7 @@ def get_groups(filename):
     file = open(filename, "r")
     for line in file:
         group_name, species_name, color = line.rstrip().split("\t")
-        species_name = species_name.split(".")[0]
+        species_name = get_short_name(species_name)
         dictionary_group[species_name] = group_name
         dictionary_color[group_name] = color
     file.close()
@@ -120,6 +120,8 @@ def get_groups(filename):
 
 def get_short_name(long_name):
     L_name = long_name.replace("_", " ").split(" ")
+    if len(L_name) == 1:
+        return long_name
     L_name[0] = L_name[0][0] + "."
     short_name = " ".join(L_name)
     return short_name
@@ -324,7 +326,7 @@ def compute_results():
     newax.patch.set_visible(False)
     newax.xaxis.set_ticks_position('bottom')
     newax.xaxis.set_label_position('bottom')
-    newax.spines['bottom'].set_position(('outward', 50))
+    newax.spines['bottom'].set_position(('outward', 75))
 
     fig.set_dpi(300)
     
@@ -455,7 +457,7 @@ def compute_results():
     newax.patch.set_visible(False)
     newax.xaxis.set_ticks_position('bottom')
     newax.xaxis.set_label_position('bottom')
-    newax.spines['bottom'].set_position(('outward', 50))
+    newax.spines['bottom'].set_position(('outward', 75))
 
     fig.set_dpi(300)
     # --- If groups have been defined by user: boxplot ---
@@ -749,4 +751,5 @@ if __name__ == "__main__":
 
 
         compute_results()
+
 

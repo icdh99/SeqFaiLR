@@ -239,9 +239,8 @@ def parse_cigar(cigar: str, read: str, pos_in_g: int):
           and soft / hard clips (strings of integers).
     read: str
         Read sequence that may have to be shorten because of soft/hard clips
-    pos_in_g: str
+    pos_in_g: int
         Initial position in genome where the read have been mapped initially
-        This number can be modified due to soft clips
     Returns
     -------
     cigar_list: [str]
@@ -261,6 +260,7 @@ def parse_cigar(cigar: str, read: str, pos_in_g: int):
     # Hard clips represent non aligned parts of the reads (3' and 5')
     #  that have already been removed from read sequence
     #  so we just remove hard clip elements from CIGAR field
+    #  also modify position in genome
     if "H" in cigar_list[0]:
         cigar_list = cigar_list[1:]
     if "H" in cigar_list[-1]:
@@ -459,10 +459,14 @@ if __name__ == "__main__":
         count_insertion += alignment.insertion
         count_deletion += alignment.deletion
 
+        # Get chromosome identifier
+        chromosome = line_list[2]
+
         # Write alignment in dedicated output file (header, genome and read)
         ALN_EXPL_FILE.write(" ; ".join([f"Read_ID={id_read}", f"strand={strand}",
                             f"position_in_genome={position_in_genome}",
-                            f"bases_soft_clipped={soft_clips}"]) + "\n")
+                            f"bases_soft_clipped={soft_clips}",
+                            f"chromosome={chromosome}"]) + "\n")
         ALN_EXPL_FILE.write(f"{alignment.genome_aln}\n{alignment.read_aln}\n")
 
 
